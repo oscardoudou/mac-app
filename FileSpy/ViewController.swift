@@ -37,8 +37,10 @@ class ViewController: NSViewController {
   var showInvisibles = false
 
   var selectedFolder: URL? {
+    //a didSet observer is looking for changes to property selectedFolder
     didSet {
       if let selectedFolder = selectedFolder {
+        //populuate filesList property to the contents of selected folder
         filesList = contentsOf(folder: selectedFolder)
         selectedItem = nil
         self.tableView.reloadData()
@@ -53,6 +55,7 @@ class ViewController: NSViewController {
   }
 
   var selectedItem: URL? {
+    //similarly a didset observer is looking for changes to selectedItem
     didSet {
       infoTextView.string = ""
       saveInfoButton.isEnabled = false
@@ -99,7 +102,15 @@ class ViewController: NSViewController {
 extension ViewController {
 
   func contentsOf(folder: URL) -> [URL] {
-    return []
+    let fileManager = FileManager.default
+    do{
+        let contents = try fileManager.contentsOfDirectory(atPath: folder.path)
+        //process the returned array using map to convert each name of file or folder inside "folder" into a complete URL
+        let urls = contents.map{ return folder.appendingPathComponent($0)}
+        return urls
+    }catch{
+        return []
+    }
   }
 
   func infoAbout(url: URL) -> String {
@@ -129,6 +140,21 @@ extension ViewController {
 extension ViewController {
 
   @IBAction func selectFolderClicked(_ sender: Any) {
+    guard let window = view.window else { return }
+    let panel = NSOpenPanel();
+    panel.canChooseFiles = false
+    panel.canChooseDirectories = true
+    panel.allowsMultipleSelection = false
+    
+    panel.beginSheetModal(for: window){(result) in
+        if result == NSFileHandlingPanelOKButton{
+            //populuate a property named selectedFolder
+            self.selectedFolder = panel.urls[0]
+            //self refer to viewController
+//                        print(self.selectedFolder)
+        }
+    }
+    
   }
 
   @IBAction func toggleShowInvisibles(_ sender: NSButton) {
@@ -161,6 +187,18 @@ extension ViewController: NSTableViewDelegate {
 
   func tableView(_ tableView: NSTableView, viewFor
     tableColumn: NSTableColumn?, row: Int) -> NSView? {
+    //get the url matching ther row number
+    let item = filesList[row]
+    //get the icon for url, NSWorkSpace is another useful singleton
+    let fileIcon = NSWorkspace.shared().icon(forFile: item.path)
+    //get a reference to the cell for this table. The FileCell identifier was set in the StoryBoard
+    if let cell = tableView.make(withIdentifier: "FileCell", owner: "nil")as?NSTableCellView{
+        //if cell exist, set its text field to show the file name and its image view to show the fiile icon
+        cell.textField?.stringValue = item.lastPathComponent;
+        cell.imageView?.image = fileIcon
+        return cell
+    }
+    //if no cell exists return nil
     return nil
   }
 
@@ -228,3 +266,6 @@ extension ViewController {
   }
 
 }
+/*
+ 
+ */
