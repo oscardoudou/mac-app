@@ -114,7 +114,24 @@ extension ViewController {
   }
 
   func infoAbout(url: URL) -> String {
-    return "No information available for \(url.path)"
+    //as usual get a reference to the FileManager shared instance
+    let fileManager = FileManager.default
+    do{
+        //get the file information, it return a dic of type FileAttributeKey(created time, author...)-> Any
+        let attributes = try fileManager.attributesOfItem(atPath: url.path)
+        //2nd element in array is empty string so that path is  2 line away from rest of attrbutes, more like a title
+        var report: [String] = ["\(url.path)",""]
+        
+        for(key, value) in attributes{
+            //ingore unuseful attributes
+            if key.rawValue == "NSFileExtendedAttributes" {continue}
+            //inside each pair concatenate key value in a fashion that value come after key with a tab
+            report.append("\(key.rawValue):\t \(value)")
+        }
+        return report.joined(separator: "\n")
+    }catch{
+        return "No information available for \(url.path)"
+    }
   }
 
   func formatInfoText(_ text: String) -> NSAttributedString {
